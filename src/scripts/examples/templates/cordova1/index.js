@@ -28,6 +28,7 @@ var branchSpotlight = document.getElementById("branchSpotlight");
 var branchUser = document.getElementById("branchUser");
 var branchLogout = document.getElementById("branchLogout");
 var branchEvent = document.getElementById("branchEvent");
+var branchCommerce = document.getElementById("branchCommerce");
 
 // handle DOM
 branchUniversalObject.addEventListener("click", BranchUniversalObject);
@@ -40,6 +41,7 @@ branchSpotlight.addEventListener("click", BranchSpotlight);
 branchUser.addEventListener("click", BranchUser);
 branchLogout.addEventListener("click", BranchLogout);
 branchEvent.addEventListener("click", BranchEvent);
+branchCommerce.addEventListener("click", BranchCommerce);
 
 // run
 app.initialize();
@@ -100,6 +102,58 @@ function BranchEvent() {
     custom_dictionary: 123,
     anything: "everything"
   };
+
+  Branch.userCompletedAction(event, metadata)
+    .then(function success(res) {
+      logger(res);
+    })
+    .catch(function error(err) {
+      logger(err, true);
+    });
+}
+
+function BranchCommerce() {
+  // revenue required
+  var event = {
+    revenue: 50.29,
+    currency: 148, // USD
+    transactionID: "transaction id",
+    coupon: "coupon",
+    shipping: 2.22,
+    tax: 5.11,
+    affiliation: "affiliation",
+    products: [
+      {
+        sku: "u123",
+        name: "cactus",
+        price: 4.99,
+        quantity: 2,
+        brand: "brand",
+        category: 17, // Software
+        variant: "variant"
+      },
+      {
+        sku: "u456",
+        name: "grass",
+        price: 0.0,
+        quantity: 1
+      }
+    ]
+  };
+
+  // optional
+  var metadata = {
+    custom_dictionary: 123,
+    anything: "everything"
+  };
+
+  Branch.sendCommerceEvent(event, metadata)
+    .then(function success(res) {
+      logger(res);
+    })
+    .catch(function error(err) {
+      logger(err, true);
+    });
 }
 
 function BranchFirstData() {

@@ -253,7 +253,7 @@
       );
     }
     if (
-      !/^([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(
+      !/^(?!.*?www).*([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(
         [...preferences.linkDomain, ...preferences.androidLinkDomain, preferences.iosLinkDomain]
       )
     ) {

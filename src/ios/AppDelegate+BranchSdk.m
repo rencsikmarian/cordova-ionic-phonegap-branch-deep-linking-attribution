@@ -5,7 +5,7 @@
 #ifdef BRANCH_NPM
 #import "Branch.h"
 #else
-#import <BranchSDK/Branch.h>
+#import <Branch/Branch.h>
 #endif
 
 // Provides Ionic Capacitor compatibility
@@ -13,12 +13,7 @@
 
 @interface AppDelegate (BranchSDK)
 
-- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:
-#if defined(__IPHONE_12_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_12_0)
-    (nonnull void (^)(NSArray<id<UIUserActivityRestoring>> *_Nullable))restorationHandler;
-#else
-    (nonnull void (^)(NSArray *_Nullable))restorationHandler;
-#endif  // __IPHONE_12_0
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray * _Nullable))restorationHandler;
 
 @end
 
@@ -37,20 +32,24 @@
 }
 
 // Respond to Universal Links
-- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:
-#if defined(__IPHONE_12_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_12_0)
-(nonnull void (^)(NSArray<id<UIUserActivityRestoring>> *_Nullable))restorationHandler {
-#else
-    (nonnull void (^)(NSArray *_Nullable))restorationHandler {
-#endif  // __IPHONE_12_0
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
   if (![[Branch getInstance] continueUserActivity:userActivity]) {
     // send unhandled URL to notification
     if ([userActivity.activityType isEqualToString:NSUserActivityTypeBrowsingWeb]) {
       [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"BSDKPostUnhandledURL" object:[userActivity.webpageURL absoluteString]]];
     }
+    // If Branch does not handle the URL, send the event to JavaScript
+    NSString *urlString = userActivity.webpageURL.absoluteString;
+    [self sendUnhandledURLEventToJavaScript:urlString];
   }
 
   return YES;
+}
+
+// Send unhandled URL to JavaScript
+- (void)sendUnhandledURLEventToJavaScript:(NSString *)urlString {
+    NSString *jsCommand = [NSString stringWithFormat:@"window.handleUnhandledBranchURL('%@');", urlString];
+    [self.viewController.webViewEngine evaluateJavaScript:jsCommand completionHandler:nil];
 }
 
 // Respond to Push Notifications

@@ -225,6 +225,34 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
   [branch registerDeepLinkController:controller forKey:[command.arguments objectAtIndex:0]];
 }
 
+- (void)userCompletedAction:(CDVInvokedUrlCommand*)command
+{
+  NSString *name;
+  NSDictionary *state;
+
+  // if a state dictionary is passed as an argument
+  if ([command.arguments count] == 2) {
+    name = [command.arguments objectAtIndex:0];
+    state = [command.arguments objectAtIndex:1];
+  }
+  else {
+    name = [command.arguments objectAtIndex:0];
+  }
+
+  Branch *branch = [self getInstance];
+
+  if (state) {
+    [branch userCompletedAction:name withState:state];
+  }
+  else {
+    [branch userCompletedAction:name];
+  }
+
+  // TODO: iOS Branch.userCompletedAction needs a callback for success or failure
+  CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: @"Success"];
+  [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 -(void)sendBranchEvent:(CDVInvokedUrlCommand*)command
 {
     NSString *eventName = [command.arguments objectAtIndex:0];
@@ -302,23 +330,17 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
   self.branchUniversalObjArray = [[NSMutableArray alloc] init];
 }
 
-- (void)setDMAParamsForEEA:(CDVInvokedUrlCommand*)command {
-  if (command.arguments.count < 3) {
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Insufficient arguments"];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    return;
+- (void)delayInitToCheckForSearchAds:(CDVInvokedUrlCommand*)command
+{
+  bool enabled = [[command.arguments objectAtIndex:0] boolValue];
+  if (enabled) {
+    [[Branch getInstance] delayInitToCheckForSearchAds];
   }
 
-  BOOL eeaRegion = [[command.arguments objectAtIndex:0] boolValue];
-  BOOL adPersonalizationConsent = [[command.arguments objectAtIndex:1] boolValue];
-  BOOL adUserDataUsageConsent = [[command.arguments objectAtIndex:2] boolValue];
+  CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:enabled];
 
-  [Branch setDMAParamsForEEA:eeaRegion AdPersonalizationConsent:adPersonalizationConsent AdUserDataUsageConsent:adUserDataUsageConsent];
-
-  CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
   [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
-
 
 #pragma mark - Branch Universal Object Methods
 
@@ -329,17 +351,20 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
 
   for (id key in properties) {
     if ([key isEqualToString:@"contentMetadata"]){
-        NSMutableDictionary<NSString *,NSString *> *metadata = (NSMutableDictionary<NSString *,NSString *> *)[properties valueForKey:key];
-        [[branchUniversalObj contentMetadata] setCustomMetadata:metadata];
+      NSDictionary *metadata = (NSDictionary *)[properties valueForKey:key];
+
+      for (id key_ in metadata) {
+        [branchUniversalObj addMetadataKey:key_ value:[metadata valueForKey:key_]];
+      }
     }
     else if ([key isEqualToString:@"contentIndexingMode"]) {
       NSString *indexingMode = [properties valueForKey:key];
       // Default contentIndexMode is always public
       if ([indexingMode isEqualToString:@"private"]) {
-        branchUniversalObj.publiclyIndex = false;
+        branchUniversalObj.contentIndexMode = BranchContentIndexModePrivate;
       }
       else {
-        branchUniversalObj.publiclyIndex = true;
+        branchUniversalObj.contentIndexMode = BranchContentIndexModePublic;
       }
     }
     else if ([key isEqualToString:@"canonicalIdentifier"]) {
@@ -492,19 +517,20 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
       [linkProperties addControlParam:key withValue:[arg2 objectForKey:key]];
     }
   }
-    [branchUniversalObj showShareSheetWithLinkProperties:linkProperties andShareText:shareText fromViewController:self.viewController completionWithError:^(NSString * _Nullable activityType, BOOL completed, NSError * _Nullable error) {
-        
-        int listenerCallbackId = [[command.arguments objectAtIndex:0] intValue];
 
-        if (completed) {
-          NSLog(@"Share link complete");
-          [branchUniversalObj getShortUrlWithLinkProperties:linkProperties andCallback:^(NSString *url, NSError *error) {
-            if (!error) {
-              NSDictionary *response = [[NSDictionary alloc] initWithObjectsAndKeys:url, @"sharedLink", activityType, @"sharedChannel", nil];
-              [self doShareLinkResponse:listenerCallbackId sendResponse:response];
-            }
-          }];
+  [branchUniversalObj showShareSheetWithLinkProperties:linkProperties andShareText:shareText fromViewController:self.viewController completion:^(NSString *activityType, BOOL completed) {
+
+    int listenerCallbackId = [[command.arguments objectAtIndex:0] intValue];
+
+    if (completed) {
+      NSLog(@"Share link complete");
+      [branchUniversalObj getShortUrlWithLinkProperties:linkProperties andCallback:^(NSString *url, NSError *error) {
+        if (!error) {
+          NSDictionary *response = [[NSDictionary alloc] initWithObjectsAndKeys:url, @"sharedLink", activityType, @"sharedChannel", nil];
+          [self doShareLinkResponse:listenerCallbackId sendResponse:response];
         }
+      }];
+    }
 
     CDVPluginResult *shareDialogDismissed = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
 
@@ -572,6 +598,37 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
 }
 
 #pragma mark Branch Query Methods
+
+- (void)crossPlatformIds:(CDVInvokedUrlCommand *)command {
+  NSMutableDictionary *json = [NSMutableDictionary new];
+
+  Branch *branch = [self getInstance];
+  [branch crossPlatformIdDataWithCompletion:^(BranchCrossPlatformID *cpid) {
+    CDVPluginResult* pluginResult = nil;
+    if (cpid) {
+      // Convert the ObjC object back into JSON.  Should have kept the raw JSON response.
+      [json setObject:cpid.developerID forKey:@"developer_identity"];
+      [json setObject:cpid.crossPlatformID forKey:@"cross_platform_id"];
+      [json setObject:cpid.pastCrossPlatformIDs forKey:@"past_cross_platform_ids"];
+
+      NSMutableArray *probCPIDs = [NSMutableArray new];
+      for (BranchProbabilisticCrossPlatformID *tmp in cpid.probabiliticCrossPlatformIDs) {
+        if (tmp.crossPlatformID && tmp.score) {
+          NSMutableDictionary *pair = [NSMutableDictionary new];
+          [pair setObject:tmp.crossPlatformID forKey:@"id"];
+          [pair setObject:tmp.score forKey:@"probability"];
+          [probCPIDs addObject:pair];
+        }
+      }
+      [json setObject:probCPIDs forKey:@"prob_cross_platform_ids"];
+
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:json];
+    } else {
+      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No CPIDs available"];
+    }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+  }];
+}
 
 - (void)lastAttributedTouchData:(CDVInvokedUrlCommand *)command {
   NSMutableDictionary *json = [NSMutableDictionary new];

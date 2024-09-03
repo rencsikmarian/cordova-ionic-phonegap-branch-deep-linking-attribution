@@ -1,25 +1,3 @@
-6.2.0 May 28, 2024
-* Update Android SDK to 5.12.0
-* Update iOS SDK to 3.4.3
-* Updated iOS deployment target to 12.0
-
-6.1.0 Feb 28, 2024
-* Update Android SDK to 5.9.0
-* Update iOS SDK to 3.2.0
-* Added new method, setDMAParamsForEEA(), for setting DMA compliance parameters.
-* Removed the deprecated setDebug() method
-
-6.0.0 Dec 1, 2023
-* Update Android SDK to 5.7.5
-* Update iOS SDK to 3.0.1
-* Updated iOS imports to work with the latest Branch SDK
-* Removed deprecated methods for CPID, BranchViewHandler, setCookieBasedMatching, and delayInitToCheckForSearchAds
-
-5.2.1 Jan 4, 2023
-* Fix Javascript method setLogging to enable logging in the native layer.
-* Update Android SDK to 5.2.7
-* Update iOS SDK to 1.45.2
-
 5.2.0 August 8th, 2022
 * Update iOS SDK to 1.43.1
 * Update Android SDK to 5.2.0
