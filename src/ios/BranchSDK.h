@@ -25,6 +25,11 @@
 
 @property (strong, nonatomic) NSMutableArray *branchUniversalObjArray;
 
++ (void)setBranchUniversalLink:(NSString *)link;
+
+//Custom get universal link in js
+- (void)getBranchUniversalLink:(CDVInvokedUrlCommand*)command;
+
 // BranchSDK Basic Methods
 - (void)enableTestMode:(CDVInvokedUrlCommand*)command;
 - (void)initSession:(CDVInvokedUrlCommand*)command;

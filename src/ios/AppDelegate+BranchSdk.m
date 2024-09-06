@@ -1,5 +1,6 @@
 #import "AppDelegate.h"
 
+#import "BranchSDK.h"
 #import "BranchNPM.h"
 
 #ifdef BRANCH_NPM
@@ -39,6 +40,8 @@
       [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"BSDKPostUnhandledURL" object:[userActivity.webpageURL absoluteString]]];
     }
   }
+
+  [BranchSDK setBranchUniversalLink:userActivity.webpageURL.absoluteString];
 
   return YES;
 }

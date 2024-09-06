@@ -84,6 +84,10 @@ function executeReject(message) {
   });
 }
 
+Branch.prototype.getBranchUniversaLink = function getBranchUniversaLink(){
+  return execute("getBranchUniversalLink");
+}
+
 // Branch interface
 Branch.prototype.disableTracking = function disableTracking(isEnabled) {
   var value = typeof isEnabled === "boolean" ? isEnabled : false;

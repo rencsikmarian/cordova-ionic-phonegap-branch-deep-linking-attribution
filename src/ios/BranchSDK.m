@@ -1,6 +1,7 @@
 #import "BranchSDK.h"
 
 NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
+static NSString * universalLinkBranch = @"";
 
 @interface BranchSDK()
 
@@ -47,6 +48,11 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
   return [Branch getTestInstance];
 }
 
++ (void)setBranchUniversalLink:(NSString *)link
+{
+    universalLinkBranch = link;
+}
+
 #pragma mark - Deep Linking Handlers
 
 - (id)handleDeepLink:(CDVInvokedUrlCommand*)command
@@ -56,6 +62,13 @@ NSString * const pluginVersion = @"%BRANCH_PLUGIN_VERSION%";
   self.deepLinkUrl = [url absoluteString];
 
   return [NSNumber numberWithBool:[[Branch getInstance] handleDeepLink:url]];
+}
+
+- (void)getBranchUniversalLink:(CDVInvokedUrlCommand*)command
+{
+    NSString* universalLink = universalLinkBranch;
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:universalLink];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 - (id)handleDeepLinkWithNewSession:(CDVInvokedUrlCommand*)command
