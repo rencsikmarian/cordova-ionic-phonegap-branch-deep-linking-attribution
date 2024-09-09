@@ -115,8 +115,13 @@ static NSString * universalLinkBranch = @"";
     if (!error) {
       if (params != nil && [params count] > 0) {
 
+        NSMutableDictionary *mutableParams = [params mutableCopy];
+        if (![params objectForKey:@"+non_branch_link"]) {
+          [mutableParams setObject:universalLinkBranch forKey:@"+non_branch_link"];
+        }
+
         NSError *err;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:params options:0 error:&err];
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:mutableParams options:0 error:&err];
 
         if (!jsonData) {
           NSLog(@"Parsing Error: %@", [err localizedDescription]);
