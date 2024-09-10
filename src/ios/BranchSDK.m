@@ -132,7 +132,7 @@ static NSString * universalLinkBranch = @"";
           pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:resultString];
         } else {
           resultString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-          pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:params];
+          pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:mutableParams];
         }
       }
     }
